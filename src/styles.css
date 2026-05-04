@@ -1,0 +1,47 @@
+:root {
+  --color-primary: #1B4F72;
+  --color-primary-fg: #FFFFFF;
+  --color-secondary: #F39C12;
+  --color-secondary-fg: #000000;
+  --color-success: #27AE60;
+  --color-success-fg: #FFFFFF;
+  --color-background-light: #F8F9FA;
+  --color-background-dark: #1A1D23;
+  
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-heading: 'Sora', system-ui, sans-serif;
+  --font-mono: 'Geist Mono', monospace;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #app {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-background-light);
+  color: #1a1a1a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
+
+code, pre, .mono {
+  font-family: var(--font-mono);
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}

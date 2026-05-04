@@ -1,0 +1,17 @@
+<script setup lang="ts">
+import { Users } from 'lucide-vue-next'
+</script>
+
+<template>
+  <div class="space-y-6">
+    <div>
+      <h1 class="text-2xl font-heading font-bold text-gray-900">Étudiants</h1>
+      <p class="text-gray-500 mt-1">Gestion de la vie étudiante</p>
+    </div>
+    <div class="bg-white rounded-xl p-12 shadow-sm border border-gray-100 text-center">
+      <Users class="w-16 h-16 text-primary/20 mx-auto mb-4" />
+      <h3 class="text-lg font-semibold text-gray-900 mb-2">Module Étudiants</h3>
+      <p class="text-gray-500">Portfolio, bourses, orientation, insertion professionnelle, alumni</p>
+    </div>
+  </div>
+</template>
