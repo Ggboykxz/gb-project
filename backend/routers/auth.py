@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from database import get_db
-from models.user import User, UserRole
+from models.user import User, Role
 from models.securite import SessionUtilisateur
 from schemas.auth import (
     UserCreate, UserLogin, TokenResponse, UserProfile, 
@@ -59,7 +59,7 @@ async def register(user_data: UserCreate, db: AsyncSession):
         hashed_password=hashed_pw,
         nom=user_data.nom,
         prenom=user_data.prenom,
-        role=user_data.role or UserRole.ETUDIANT,
+        role=user_data.role or Role.ETUDIANT,
         is_active=True,
         is_verified=False
     )

@@ -3,7 +3,7 @@ from sqlalchemy import Column, String, DateTime, Boolean, Enum as SQLEnum, JSON
 from sqlalchemy.orm import relationship
 import enum
 from datetime import datetime
-from ..database import Base
+from database import Base
 
 class Role(enum.Enum):
     SUPER_ADMIN = "SUPER_ADMIN"

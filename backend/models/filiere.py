@@ -1,8 +1,10 @@
-"""Modèles Filière, UE, Maquette, Salle et Créneaux"""
-from sqlalchemy import Column, String, Integer, ForeignKey, Enum as SQLEnum, JSON, Boolean
+"""Modèles Filière, UE, Maquette, Salle, Creneau"""
+from sqlalchemy import Column, String, Integer, ForeignKey, JSON, Boolean, Enum as SQLEnum, Float, Date, Time
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 import enum
-from ..database import Base
+from datetime import datetime
+from database import Base
 
 class NiveauLMD(enum.Enum):
     L1 = "L1"
@@ -13,35 +15,34 @@ class NiveauLMD(enum.Enum):
     D = "D"
 
 class TypeUE(enum.Enum):
-    OBLIGATOIRE = "OBLIGATOIRE"
-    OPTIONNEL = "OPTIONNEL"
+    OBLIGATOIRE = "obligatoire"
+    OPTIONNEL = "optionnel"
 
 class StatutMaquette(enum.Enum):
-    BROUILLON = "BROUILLON"
-    VALIDE = "VALIDE"
-    ARCHIVE = "ARCHIVE"
+    BROUILLON = "brouillon"
+    VALIDE = "validé"
+    ARCHIVE = "archivé"
 
 class TypeSalle(enum.Enum):
-    AMPHI = "AMPHI"
-    TD = "TD"
-    TP = "TP"
-    INFO = "INFO"
+    AMphi = "amphi"
+    TD = "td"
+    TP = "tp"
+    INFO = "info"
 
 class Filiere(Base):
     __tablename__ = "filieres"
     
     id = Column(String(36), primary_key=True)
-    code = Column(String(10), unique=True, nullable=False)
+    code = Column(String(20), unique=True, nullable=False)
     libelle = Column(String(200), nullable=False)
     domaine = Column(String(100))
-    niveau_principal = Column(SQLEnum(NiveauLMD))
-    duree_annees = Column(Integer, default=3)
+    niveau = Column(SQLEnum(NiveauLMD))
+    duree_annees = Column(Integer)
     responsable_id = Column(String(36), ForeignKey("users.id"))
-    created_at = Column(String(50))
     
-    inscriptions = relationship("Inscription", back_populates="filiere")
     ues = relationship("UE", back_populates="filiere")
     maquettes = relationship("Maquette", back_populates="filiere")
+    inscriptions = relationship("Inscription", back_populates="filiere")
 
 class UE(Base):
     __tablename__ = "ues"
@@ -50,17 +51,17 @@ class UE(Base):
     filiere_id = Column(String(36), ForeignKey("filieres.id"), nullable=False)
     code_ue = Column(String(20), nullable=False)
     libelle = Column(String(200), nullable=False)
-    credits_ects = Column(Integer, nullable=False, default=6)
-    semestre = Column(Integer, nullable=False)
+    credits_ects = Column(Integer, default=6)
+    semestre = Column(Integer)
     heures_cm = Column(Integer, default=0)
     heures_td = Column(Integer, default=0)
     heures_tp = Column(Integer, default=0)
-    coefficient = Column(Integer, default=1)
+    coefficient = Column(Float, default=1.0)
     ue_type = Column(SQLEnum(TypeUE), default=TypeUE.OBLIGATOIRE)
     
     filiere = relationship("Filiere", back_populates="ues")
-    cours = relationship("Cours", back_populates="ue")
     notes = relationship("Note", back_populates="ue")
+    creneaux = relationship("Creneau", back_populates="ue")
 
 class Maquette(Base):
     __tablename__ = "maquettes"
@@ -85,7 +86,6 @@ class Salle(Base):
     disponible = Column(Boolean, default=True)
     
     creneaux = relationship("Creneau", back_populates="salle")
-    cours = relationship("Cours", back_populates="salle")
 
 class Creneau(Base):
     __tablename__ = "creneaux"
@@ -94,12 +94,12 @@ class Creneau(Base):
     ue_id = Column(String(36), ForeignKey("ues.id"), nullable=False)
     enseignant_id = Column(String(36), ForeignKey("users.id"))
     salle_id = Column(String(36), ForeignKey("salles.id"))
-    groupe = Column(String(20))
+    groupe = Column(String(50))
     jour = Column(String(20))
-    heure_debut = Column(String(10))
-    heure_fin = Column(String(10))
+    heure_debut = Column(Time)
+    heure_fin = Column(Time)
     semaine_type = Column(String(10), default="toutes")
-    couleur_hex = Column(String(7), default="#3498db")
+    couleur_hex = Column(String(7), default="#3B82F6")
     
     ue = relationship("UE", back_populates="creneaux")
     salle = relationship("Salle", back_populates="creneaux")

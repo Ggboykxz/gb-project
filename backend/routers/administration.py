@@ -18,7 +18,7 @@ from models.filiere import Filiere, UE, Maquette
 from models.etudiant import Etudiant
 from models.inscription import Inscription
 from models.note import Note
-from models.cours import Salle, Cours, Presence
+from models.filiere import Salle, Cours, Presence
 from services.administration import (
     create_etudiant_service, get_etudiants_service, get_etudiant_service, update_etudiant_service,
     create_inscription_service, get_inscriptions_service, validate_inscription_service,

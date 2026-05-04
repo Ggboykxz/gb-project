@@ -3,7 +3,7 @@ from sqlalchemy import Column, String, DateTime, Boolean, ForeignKey, Enum as SQ
 from sqlalchemy.orm import relationship
 import enum
 from datetime import datetime
-from ..database import Base
+from database import Base
 
 class StatutEtudiant(enum.Enum):
     ACTIF = "ACTIF"

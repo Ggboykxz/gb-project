@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from database import get_db
-from models.user import User, UserRole
+from models.user import User, Role
 from models.securite import SessionUtilisateur, TentativeConnexion, VerrouillageCompte
 
 # Configuration
@@ -237,16 +237,16 @@ def require_permission(permission: str):
             )
         
         # SUPER_ADMIN and ADMIN_SCOL have all permissions
-        if current_user.role in [UserRole.SUPER_ADMIN, UserRole.ADMIN_SCOL]:
+        if current_user.role in [Role.SUPER_ADMIN, Role.ADMIN_SCOL]:
             return current_user
         
         # Simple permission check based on role
         role_permissions = {
-            UserRole.ENSEIGNANT: ["notes:create", "notes:update", "cours:read", "presence:create"],
-            UserRole.ETUDIANT: ["portfolio:read", "portfolio:update", "candidatures:create"],
-            UserRole.FINANCIER: ["finances:read", "finances:create", "paiements:validate"],
-            UserRole.BIBLIOTHECAIRE: ["bibliotheque:read", "bibliotheque:update"],
-            UserRole.CHERCHEUR: ["recherche:read", "recherche:create"],
+            Role.ENSEIGNANT: ["notes:create", "notes:update", "cours:read", "presence:create"],
+            Role.ETUDIANT: ["portfolio:read", "portfolio:update", "candidatures:create"],
+            Role.FINANCIER: ["finances:read", "finances:create", "paiements:validate"],
+            Role.BIBLIOTHECAIRE: ["bibliotheque:read", "bibliotheque:update"],
+            Role.CHERCHEUR: ["recherche:read", "recherche:create"],
         }
         
         user_permissions = role_permissions.get(current_user.role, [])

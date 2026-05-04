@@ -12,7 +12,7 @@ from models.filiere import Filiere, UE, Maquette
 from models.etudiant import Etudiant
 from models.inscription import Inscription
 from models.note import Note
-from models.cours import Salle
+from models.filiere import Salle
 
 # Import schemas mais pas CreneauCreate/DeliberationCreate/DiplomeCreate car ces modèles n'existent pas encore
 from schemas.administration import (
