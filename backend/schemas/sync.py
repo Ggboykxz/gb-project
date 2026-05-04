@@ -84,3 +84,46 @@ class SyncStats(BaseModel):
     by_operation: dict
     failed_count: int
     last_successful_sync: Optional[datetime] = None
+
+
+class SyncStatusResponse(BaseModel):
+    pending_operations: int
+    failed_operations: int
+    unresolved_conflicts: int
+    last_sync: Optional[str]
+    last_sync_status: Optional[str]
+    device_id: str
+    is_online: bool
+
+
+class SyncOperationResponse(BaseModel):
+    success: bool
+    message: str
+    count: int
+    conflicts: List[dict] = []
+
+
+class ConflictResolutionRequest(BaseModel):
+    conflict_id: int
+    resolution: str  # "local", "remote", "merge"
+    merged_data: Optional[dict] = None
+
+
+class SyncManualRequest(BaseModel):
+    operation: str
+    table_name: str
+    record_id: int
+    payload: dict
+    priority: str = "NORMAL"
+
+
+class SyncLogResponse(BaseModel):
+    id: int
+    direction: str
+    records_count: int
+    status: str
+    started_at: str
+    completed_at: Optional[str]
+    error_message: Optional[str]
+
+    model_config = ConfigDict(from_attributes=True)
