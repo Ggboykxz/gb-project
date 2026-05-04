@@ -1,4 +1,4 @@
-"""Pydantic schemas for authentication module"""
+"""Pydantic schemas for authentication module - GabonEdu Campus"""
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
 from typing import Optional
 from datetime import datetime
@@ -19,7 +19,7 @@ class UserBase(BaseModel):
     email: EmailStr
     nom: str = Field(..., min_length=2, max_length=100)
     prenom: str = Field(..., min_length=2, max_length=100)
-    role: UserRole = UserRole.ETUDIANT
+    role: Optional[UserRole] = UserRole.ETUDIANT
 
 
 class UserCreate(UserBase):
@@ -33,18 +33,22 @@ class UserUpdate(BaseModel):
     is_active: Optional[bool] = None
 
 
-class UserResponse(UserBase):
+class UserProfile(BaseModel):
     id: int
+    email: str
+    nom: str
+    prenom: str
+    role: UserRole
     is_active: bool
-    is_verified: bool
-    created_at: datetime
-    updated_at: Optional[datetime] = None
+    is_verified: Optional[bool] = False
+    has_totp: Optional[bool] = False
+    created_at: Optional[datetime] = None
     last_login: Optional[datetime] = None
     
     model_config = ConfigDict(from_attributes=True)
 
 
-class LoginRequest(BaseModel):
+class UserLogin(BaseModel):
     email: EmailStr
     password: str
     totp_code: Optional[str] = None
@@ -57,20 +61,18 @@ class TokenResponse(BaseModel):
     expires_in: int = 900  # 15 minutes
 
 
-class RefreshTokenRequest(BaseModel):
-    refresh_token: str
-
-
 class TOTPSetupResponse(BaseModel):
-    totp_uri: str
-    qr_code_base64: str
     secret: str
+    uri: str
+    qr_code: str
+    message: str
 
 
-class VerifyTOTPRequest(BaseModel):
-    totp_code: str
+class TOTPVerifyRequest(BaseModel):
+    secret: Optional[str] = None
+    code: str
 
 
-class ChangePasswordRequest(BaseModel):
-    current_password: str
+class PasswordChangeRequest(BaseModel):
+    old_password: str
     new_password: str = Field(..., min_length=8)

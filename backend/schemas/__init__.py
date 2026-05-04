@@ -1,8 +1,8 @@
 """Schemas package for GabonEdu Campus"""
 from schemas.auth import (
-    UserRole, UserBase, UserCreate, UserUpdate, UserResponse,
-    LoginRequest, TokenResponse, RefreshTokenRequest,
-    TOTPSetupResponse, VerifyTOTPRequest, ChangePasswordRequest
+    UserRole, UserBase, UserCreate, UserUpdate, UserProfile, UserLogin,
+    TokenResponse,
+    TOTPSetupResponse, TOTPVerifyRequest, PasswordChangeRequest
 )
 
 from schemas.administration import (
@@ -48,9 +48,9 @@ from schemas.sync import (
 
 __all__ = [
     # Auth
-    "UserRole", "UserBase", "UserCreate", "UserUpdate", "UserResponse",
-    "LoginRequest", "TokenResponse", "RefreshTokenRequest",
-    "TOTPSetupResponse", "VerifyTOTPRequest", "ChangePasswordRequest",
+    "UserRole", "UserBase", "UserCreate", "UserUpdate", "UserProfile", "UserLogin",
+    "TokenResponse",
+    "TOTPSetupResponse", "TOTPVerifyRequest", "PasswordChangeRequest",
     # Administration
     "DomaineEtude", "NiveauFiliere", "FiliereBase", "FiliereCreate", "FiliereUpdate", "FiliereResponse",
     "UETypEnum", "UEBase", "UECreate", "UEUpdate", "UEResponse",
