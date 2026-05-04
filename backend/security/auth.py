@@ -1,27 +1,29 @@
-"""Security utilities for GabonEdu Campus"""
+"""Security utilities for GabonEdu Campus - Authentification JWT, 2FA TOTP, RBAC"""
 from datetime import datetime, timedelta
 from typing import Optional
-from jose import JWTError, jwt
-from passlib.context import CryptContext
+import jwt
 import pyotp
 import qrcode
 import base64
 from io import BytesIO
+from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from database import get_db
 from models.user import User, UserRole
+from models.securite import SessionUtilisateur, TentativeConnexion, VerrouillageCompte
 
 # Configuration
-SECRET_KEY = "votre-cle-secrete-tres-forte-changez-moi-en-production"
+SECRET_KEY = "gabonedu-secret-key-change-in-production-2024"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -30,34 +32,47 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def get_password_hash(password: str) -> str:
-    """Hash a password"""
+    """Hash a password with Argon2"""
     return pwd_context.hash(password)
+
+
+def validate_password_strength(password: str) -> tuple[bool, str]:
+    """
+    Validate password strength according to GabonEdu policy:
+    - Min 8 characters
+    - At least 1 uppercase
+    - At least 1 digit
+    - At least 1 special character
+    """
+    if len(password) < 8:
+        return False, "Le mot de passe doit contenir au moins 8 caractères"
+    
+    if not any(c.isupper() for c in password):
+        return False, "Le mot de passe doit contenir au moins une majuscule"
+    
+    if not any(c.isdigit() for c in password):
+        return False, "Le mot de passe doit contenir au moins un chiffre"
+    
+    if not any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in password):
+        return False, "Le mot de passe doit contenir au moins un caractère spécial"
+    
+    return True, "Mot de passe valide"
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
     """Create a JWT access token"""
     to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    
+    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
     to_encode.update({"exp": expire, "type": "access"})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def create_refresh_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+def create_refresh_token(data: dict) -> str:
     """Create a JWT refresh token"""
     to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
-    
+    expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({"exp": expire, "type": "refresh"})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
 def decode_token(token: str) -> Optional[dict]:
@@ -65,7 +80,7 @@ def decode_token(token: str) -> Optional[dict]:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return payload
-    except JWTError:
+    except jwt.PyJWTError:
         return None
 
 
@@ -107,66 +122,104 @@ def generate_totp_qr_code(totp_uri: str) -> str:
     buffered = BytesIO()
     img.save(buffered, format="PNG")
     img_str = base64.b64encode(buffered.getvalue()).decode()
-    return img_str
+    return f"data:image/png;base64,{img_str}"
 
 
 def verify_totp(secret: str, code: str) -> bool:
     """Verify a TOTP code"""
     totp = pyotp.TOTP(secret)
-    return totp.verify(code, valid_window=1)
-
-
-def validate_password_strength(password: str) -> tuple[bool, str]:
-    """
-    Validate password strength.
-    Returns (is_valid, error_message)
-    """
-    if len(password) < 8:
-        return False, "Le mot de passe doit contenir au moins 8 caractères"
-    
-    if not any(c.isupper() for c in password):
-        return False, "Le mot de passe doit contenir au moins une majuscule"
-    
-    if not any(c.isdigit() for c in password):
-        return False, "Le mot de passe doit contenir au moins un chiffre"
-    
-    if not any(c in "!@#$%^&*()_+-=[]{}|;:,.<>?" for c in password):
-        return False, "Le mot de passe doit contenir au moins un caractère spécial"
-    
-    return True, ""
+    return totp.verify(code, valid_window=1)  # 1 window tolerance
 
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
     db: AsyncSession = Depends(get_db)
-) -> User:
+) -> Optional[User]:
     """Get current authenticated user from JWT token"""
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Informations d'identification invalides",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+    token_data = decode_token(token)
+    if token_data is None or token_data.get("type") != "access":
+        return None
     
-    payload = verify_token(token, "access")
-    if payload is None:
-        raise credentials_exception
-    
-    user_id: int = payload.get("sub")
+    user_id: int = token_data.get("sub")
     if user_id is None:
-        raise credentials_exception
+        return None
     
-    # Get user from database
-    from sqlalchemy.future import select
     result = await db.execute(select(User).where(User.id == int(user_id)))
     user = result.scalar_one_or_none()
     
-    if user is None:
-        raise credentials_exception
-    
-    if not user.actif:
-        raise HTTPException(status_code=403, detail="Compte utilisateur désactivé")
+    if user is None or not user.is_active:
+        return None
     
     return user
+
+
+async def check_account_lockout(email: str, db: AsyncSession) -> bool:
+    """Check if account is locked due to too many failed attempts"""
+    result = await db.execute(
+        select(VerrouillageCompte).where(
+            VerrouillageCompte.email == email,
+            VerrouillageCompte.deverrouillage_apres > datetime.utcnow()
+        )
+    )
+    lockout = result.scalar_one_or_none()
+    
+    if lockout:
+        return True
+    
+    # Clean up expired lockouts
+    await db.execute(
+        VerrouillageCompte.__table__.delete().where(
+            VerrouillageCompte.deverrouillage_apres < datetime.utcnow()
+        )
+    )
+    await db.commit()
+    
+    return False
+
+
+async def record_login_attempt(email: str, success: bool, db: AsyncSession, ip_address: str = "127.0.0.1"):
+    """Record login attempt and handle lockout"""
+    attempt = TentativeConnexion(
+        email=email,
+        succes=success,
+        adresse_ip=ip_address
+    )
+    db.add(attempt)
+    
+    if not success:
+        thirty_min_ago = datetime.utcnow() - timedelta(minutes=30)
+        result = await db.execute(
+            select(TentativeConnexion).where(
+                TentativeConnexion.email == email,
+                TentativeConnexion.succes == False,
+                TentativeConnexion.timestamp >= thirty_min_ago
+            )
+        )
+        failed_attempts = result.scalars().all()
+        
+        if len(failed_attempts) >= 5:
+            lockout = VerrouillageCompte(
+                email=email,
+                deverrouillage_apres=datetime.utcnow() + timedelta(minutes=30),
+                raison="5 tentatives échouées consécutives"
+            )
+            db.add(lockout)
+    
+    await db.commit()
+
+
+async def invalidate_user_sessions(user_id: int, db: AsyncSession, current_session_id: Optional[int] = None):
+    """Invalidate all user sessions except optionally one"""
+    query = SessionUtilisateur.__table__.update().where(
+        SessionUtilisateur.utilisateur_id == user_id
+    )
+    
+    if current_session_id:
+        query = query.where(SessionUtilisateur.id != current_session_id)
+    
+    query = query.values(statut="invalide", date_expiration=datetime.utcnow())
+    await db.execute(query)
+    await db.commit()
 
 
 def require_permission(permission: str):
@@ -177,12 +230,17 @@ def require_permission(permission: str):
     async def permission_checker(
         current_user: User = Depends(get_current_user)
     ) -> User:
+        if current_user is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Utilisateur non authentifié"
+            )
+        
         # SUPER_ADMIN and ADMIN_SCOL have all permissions
         if current_user.role in [UserRole.SUPER_ADMIN, UserRole.ADMIN_SCOL]:
             return current_user
         
         # Simple permission check based on role
-        # In production, implement a full RBAC matrix
         role_permissions = {
             UserRole.ENSEIGNANT: ["notes:create", "notes:update", "cours:read", "presence:create"],
             UserRole.ETUDIANT: ["portfolio:read", "portfolio:update", "candidatures:create"],
@@ -193,7 +251,6 @@ def require_permission(permission: str):
         
         user_permissions = role_permissions.get(current_user.role, [])
         
-        # Check if permission is granted
         if permission not in user_permissions:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
