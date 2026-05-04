@@ -49,7 +49,7 @@ class FraisScolarite(Base):
     __tablename__ = "frais_scolarite"
     
     id = Column(Integer, primary_key=True, index=True)
-    filiere_id = Column(Integer, ForeignKey("filiere.id"), nullable=False)
+    filiere_id = Column(Integer, ForeignKey("filieres.id"), nullable=False)
     annee_academique = Column(String(9), nullable=False, index=True)  # ex: "2024-2025"
     niveau = Column(String(20), nullable=False)  # L1, L2, L3, M1, M2, D1...
     montant_inscription_fcfa = Column(Numeric(12, 2), default=0)
@@ -68,7 +68,7 @@ class Paiement(Base):
     __tablename__ = "paiement"
     
     id = Column(Integer, primary_key=True, index=True)
-    inscription_id = Column(Integer, ForeignKey("inscription.id"), nullable=False, index=True)
+    inscription_id = Column(Integer, ForeignKey("inscriptions.id"), nullable=False, index=True)
     frais_scolarite_id = Column(Integer, ForeignKey("frais_scolarite.id"), nullable=True)
     montant_fcfa = Column(Numeric(12, 2), nullable=False)
     date_paiement = Column(DateTime(timezone=True), server_default=func.now(), index=True)
@@ -76,7 +76,7 @@ class Paiement(Base):
     operateur = Column(Enum(OperateurPaiement), default=OperateurPaiement.NONE)
     reference_transaction = Column(String(100), unique=True, nullable=True)  # ID transaction mobile money
     recu_url = Column(String(500), nullable=True)  # Chemin vers le PDF du reçu
-    saisi_par = Column(Integer, ForeignKey("user.id"), nullable=False)
+    saisi_par = Column(Integer, ForeignKey("users.id"), nullable=False)
     commentaire = Column(Text, nullable=True)
     statut = Column(String(20), default="validé")  # validé, en_attente, annulé
     date_creation = Column(DateTime(timezone=True), server_default=func.now())
@@ -92,7 +92,7 @@ class Relance(Base):
     __tablename__ = "relance"
     
     id = Column(Integer, primary_key=True, index=True)
-    inscription_id = Column(Integer, ForeignKey("inscription.id"), nullable=False, index=True)
+    inscription_id = Column(Integer, ForeignKey("inscriptions.id"), nullable=False, index=True)
     type_relance = Column(Enum(TypeRelance), nullable=False)
     date_envoi = Column(DateTime(timezone=True), server_default=func.now())
     canal = Column(Enum(CanalRelance), nullable=False)
@@ -119,7 +119,7 @@ class BudgetDepartement(Base):
     __tablename__ = "budget_departement"
     
     id = Column(Integer, primary_key=True, index=True)
-    departement_id = Column(Integer, ForeignKey("filiere.id"), nullable=True)  # NULL pour budget général
+    departement_id = Column(Integer, ForeignKey("filieres.id"), nullable=True)  # NULL pour budget général
     annee = Column(String(4), nullable=False, index=True)
     lignes_budgetaires_json = Column(JSON, default=list)  # [{code: "6061", libelle: "Fournitures", prevu: 1000000, realise: 850000}, ...]
     statut = Column(Enum(StatutBudget), default=StatutBudget.PREVISIONNEL)
@@ -144,10 +144,10 @@ class EcritureComptable(Base):
     compte_credit = Column(String(20), nullable=False)  # Ex: 7011 (Ventes)
     montant_fcfa = Column(Numeric(15, 2), nullable=False)
     piece_justificative_url = Column(String(500), nullable=True)
-    departement_id = Column(Integer, ForeignKey("filiere.id"), nullable=True)
-    projet_id = Column(Integer, ForeignKey("projet_recherche.id"), nullable=True)
+    departement_id = Column(Integer, ForeignKey("filieres.id"), nullable=True)
+    projet_id = Column(Integer, ForeignKey("projets_recherche.id"), nullable=True)
     budget_id = Column(Integer, ForeignKey("budget_departement.id"), nullable=True)
-    saisie_par = Column(Integer, ForeignKey("user.id"), nullable=False)
+    saisie_par = Column(Integer, ForeignKey("users.id"), nullable=False)
     validee = Column(Boolean, default=False)
     date_creation = Column(DateTime(timezone=True), server_default=func.now())
     
@@ -204,8 +204,8 @@ class DemandeAchat(Base):
     __tablename__ = "demande_achat"
     
     id = Column(Integer, primary_key=True, index=True)
-    departement_id = Column(Integer, ForeignKey("filiere.id"), nullable=False)
-    demandeur_id = Column(Integer, ForeignKey("user.id"), nullable=False)
+    departement_id = Column(Integer, ForeignKey("filieres.id"), nullable=False)
+    demandeur_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     objet = Column(String(255), nullable=False)
     description = Column(Text, nullable=True)
     montant_estime_fcfa = Column(Numeric(15, 2), nullable=False)
@@ -330,7 +330,7 @@ class Personnel(Base):
     matricule = Column(String(20), unique=True, nullable=False, index=True)
     type_personnel = Column(Enum(TypePersonnel), nullable=False)
     grade = Column(String(50), nullable=True)  # Professeur, Maître de conférences, etc.
-    departement_id = Column(Integer, ForeignKey("filiere.id"), nullable=True)
+    departement_id = Column(Integer, ForeignKey("filieres.id"), nullable=True)
     date_embauche = Column(Date, nullable=False)
     date_naissance = Column(Date, nullable=True)
     telephone = Column(String(20), nullable=True)
@@ -369,7 +369,7 @@ class CongeAbsence(Base):
     date_debut = Column(Date, nullable=False)
     date_fin = Column(Date, nullable=False)
     statut = Column(String(20), default="en_attente")  # en_attente, validé, refusé
-    valide_par = Column(Integer, ForeignKey("user.id"), nullable=True)
+    valide_par = Column(Integer, ForeignKey("users.id"), nullable=True)
     justificatif_url = Column(String(500), nullable=True)
     commentaire = Column(Text, nullable=True)
     date_demande = Column(DateTime(timezone=True), server_default=func.now())
@@ -386,7 +386,7 @@ class EvaluationPersonnel(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     personnel_id = Column(Integer, ForeignKey("personnel.id"), nullable=False, index=True)
-    evaluateur_id = Column(Integer, ForeignKey("user.id"), nullable=False)
+    evaluateur_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     annee = Column(String(4), nullable=False, index=True)
     criteres_json = Column(JSON, default=dict)  # {competence_pedagogique: 4, ponctualite: 5, ...}
     note_globale = Column(Float, default=0.0)  # Sur 5 ou 20
@@ -414,7 +414,7 @@ class HeureVacation(Base):
     montant_total_fcfa = Column(Numeric(12, 2), default=0)
     statut_paiement = Column(String(20), default="a_payer")  # a_payer, payé
     observation = Column(Text, nullable=True)
-    valide_par = Column(Integer, ForeignKey("user.id"), nullable=True)
+    valide_par = Column(Integer, ForeignKey("users.id"), nullable=True)
     date_saisie = Column(DateTime(timezone=True), server_default=func.now())
     date_validation = Column(DateTime(timezone=True), nullable=True)
     

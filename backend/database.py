@@ -14,14 +14,14 @@ else:  # macOS/Linux
 db_dir.mkdir(parents=True, exist_ok=True)
 DATABASE_URL = f"sqlite+aiosqlite:///{db_dir / 'campus.db'}"
 
-engine = create_async_engine(
+async_engine = create_async_engine(
     DATABASE_URL,
     echo=False,
     future=True,
 )
 
 async_session = async_sessionmaker(
-    engine,
+    async_engine,
     class_=AsyncSession,
     expire_on_commit=False,
 )
@@ -30,9 +30,9 @@ Base = declarative_base()
 
 async def init_db():
     """Initialize database and create tables"""
-    async with engine.begin() as conn:
+    async with async_engine.begin() as conn:
         # Import all models to ensure they're registered with Base
-        from models import etudiant, filiere, user, inscription, ue, cours, note, paiement
+        from models import administration, vie_etudiante, finances, security
         
         await conn.run_sync(Base.metadata.create_all)
 
@@ -47,3 +47,7 @@ async def get_db() -> AsyncSession:
             raise
         finally:
             await session.close()
+
+async def get_async_session() -> AsyncSession:
+    """Get async session for scripts"""
+    return async_session()

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "GabonEdu Campus",
+  "productName": "GabonEdu Campus - CUK",
   "version": "1.0.0",
-  "identifier": "ga.gabonedu.campus",
+  "identifier": "ga.gabonedu.cuk",
   "build": {
     "beforeBuildCommand": "npm run build",
     "beforeDevCommand": "npm run dev",
@@ -13,7 +13,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "GabonEdu Campus",
+        "title": "GabonEdu Campus - Centre Universitaire de Koulamoutou",
         "width": 1400,
         "height": 900,
         "minWidth": 1024,
@@ -38,8 +38,12 @@
       "icons/icon.ico"
     ],
     "category": "Education",
-    "shortDescription": "Gestion académique universitaire",
-    "longDescription": "Application desktop tout-en-un pour la gestion académique, administrative et pédagogique des universités gabonaises"
+    "shortDescription": "Gestion académique CUK/USTM",
+    "longDescription": "Application desktop tout-en-un pour la gestion académique du Centre Universitaire de Koulamoutou",
+    "resources": [
+      "../backend/dist/gabon_edu_backend*",
+      "../backend/requirements.txt"
+    ]
   },
   "plugins": {
     "shell": {
@@ -47,7 +51,8 @@
       "scope": [
         {
           "name": "gabon_edu_backend",
-          "sidecar": true
+          "sidecar": true,
+          "args": true
         }
       ]
     }

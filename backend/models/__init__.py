@@ -50,6 +50,12 @@ from models.securite import (
     ConsentementRGPD, ExportDonnees
 )
 
+# Aliases pour le script seed (compatibilité avec les imports du seed.py)
+administration = None  # Les modèles sont importés directement ci-dessus
+vie_etudiante = None
+finances = None
+security = None
+
 __all__ = [
     # User
     "User",
