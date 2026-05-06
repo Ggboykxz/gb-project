@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useSyncStore } from '@/stores/sync'
+import { login, setToken, getCurrentUser } from '@/api/auth'
 import { LogIn, Shield } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -21,29 +22,26 @@ async function handleLogin() {
   error.value = ''
 
   try {
-    // Simuler une connexion (à remplacer par appel API réel)
-    await new Promise(resolve => setTimeout(resolve, 1000))
-
-    // Mock user data
-    const user = {
-      id: '1',
-      email: email.value,
-      nom: 'ADMINISTRATEUR',
-      prenom: 'Super',
-      role: 'SUPER_ADMIN' as const,
-    }
-
-    authStore.setUser(user)
+    const response = await login(email.value, password.value)
+    setToken(response.access_token)
     
-    // Simuler token JWT
-    localStorage.setItem('auth_token', 'mock-jwt-token')
+    const user = await getCurrentUser(response.access_token)
+    authStore.setUser({
+      id: String(user.id),
+      email: user.email,
+      nom: user.nom,
+      prenom: user.prenom,
+      role: user.role as any,
+    })
     
-    // Simuler statut online
     syncStore.setOnline(true)
-
     router.push('/')
-  } catch (err) {
-    error.value = 'Échec de la connexion. Vérifiez vos identifiants.'
+  } catch (err: any) {
+    if (err.message.includes('Failed to connect') || err.message.includes('NetworkError')) {
+      error.value = 'Serveur non accessible. Utilisez le mode hors-ligne.'
+    } else {
+      error.value = err.message || 'Échec de la connexion. Vérifiez vos identifiants.'
+    }
   } finally {
     loading.value = false
   }
