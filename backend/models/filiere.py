@@ -1,10 +1,10 @@
-"""Modèles Filière, UE, Maquette, Salle, Creneau"""
-from sqlalchemy import Column, String, Integer, ForeignKey, JSON, Boolean, Enum as SQLEnum, Float, Date, Time
+"""Modèles Filière, UE, Maquette, Salle - VERSION CORRIGÉE"""
+from sqlalchemy import Column, String, Integer, ForeignKey, JSON, Boolean, Enum as SQLEnum, Float, Date, Time, DateTime
 from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
 import enum
 from datetime import datetime
 from database import Base
+import uuid
 
 class NiveauLMD(enum.Enum):
     L1 = "L1"
@@ -24,7 +24,7 @@ class StatutMaquette(enum.Enum):
     ARCHIVE = "archivé"
 
 class TypeSalle(enum.Enum):
-    AMphi = "amphi"
+    AMPHI = "amphi"
     TD = "td"
     TP = "tp"
     INFO = "info"
@@ -38,11 +38,13 @@ class Filiere(Base):
     domaine = Column(String(100))
     niveau = Column(SQLEnum(NiveauLMD))
     duree_annees = Column(Integer)
-    responsable_id = Column(String(36), ForeignKey("users.id"))
+    responsable_id = Column(String(36), ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
     
-    ues = relationship("UE", back_populates="filiere")
-    maquettes = relationship("Maquette", back_populates="filiere")
-    inscriptions = relationship("Inscription", back_populates="filiere")
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.id:
+            self.id = str(uuid.uuid4())
 
 class UE(Base):
     __tablename__ = "ues"
@@ -58,10 +60,12 @@ class UE(Base):
     heures_tp = Column(Integer, default=0)
     coefficient = Column(Float, default=1.0)
     ue_type = Column(SQLEnum(TypeUE), default=TypeUE.OBLIGATOIRE)
+    created_at = Column(DateTime, default=datetime.utcnow)
     
-    filiere = relationship("Filiere", back_populates="ues")
-    notes = relationship("Note", back_populates="ue")
-    creneaux = relationship("Creneau", back_populates="ue")
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.id:
+            self.id = str(uuid.uuid4())
 
 class Maquette(Base):
     __tablename__ = "maquettes"
@@ -71,8 +75,12 @@ class Maquette(Base):
     annee_academique = Column(String(20), nullable=False)
     ues_json = Column(JSON, default=list)
     statut = Column(SQLEnum(StatutMaquette), default=StatutMaquette.BROUILLON)
+    created_at = Column(DateTime, default=datetime.utcnow)
     
-    filiere = relationship("Filiere", back_populates="maquettes")
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.id:
+            self.id = str(uuid.uuid4())
 
 class Salle(Base):
     __tablename__ = "salles"
@@ -84,22 +92,29 @@ class Salle(Base):
     equipements_json = Column(JSON, default=list)
     batiment = Column(String(50))
     disponible = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
     
-    creneaux = relationship("Creneau", back_populates="salle")
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.id:
+            self.id = str(uuid.uuid4())
 
 class Creneau(Base):
     __tablename__ = "creneaux"
     
     id = Column(String(36), primary_key=True)
     ue_id = Column(String(36), ForeignKey("ues.id"), nullable=False)
-    enseignant_id = Column(String(36), ForeignKey("users.id"))
-    salle_id = Column(String(36), ForeignKey("salles.id"))
+    enseignant_id = Column(String(36), ForeignKey("users.id"), nullable=True)
+    salle_id = Column(String(36), ForeignKey("salles.id"), nullable=True)
     groupe = Column(String(50))
     jour = Column(String(20))
     heure_debut = Column(Time)
     heure_fin = Column(Time)
     semaine_type = Column(String(10), default="toutes")
     couleur_hex = Column(String(7), default="#3B82F6")
+    created_at = Column(DateTime, default=datetime.utcnow)
     
-    ue = relationship("UE", back_populates="creneaux")
-    salle = relationship("Salle", back_populates="creneaux")
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.id:
+            self.id = str(uuid.uuid4())

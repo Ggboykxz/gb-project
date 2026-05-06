@@ -12,7 +12,7 @@ pyotp==2.9.0
 qrcode[pil]==7.4.2
 weasyprint==60.2
 openpyxl==3.1.2
-lz4==4.3.3
+# lz4 - optional for compression
 pytest==7.4.4
 pytest-asyncio==0.23.3
 httpx==0.26.0

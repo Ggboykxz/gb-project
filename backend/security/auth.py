@@ -14,7 +14,7 @@ from sqlalchemy import select
 
 from database import get_db
 from models.user import User, Role
-from models.securite import SessionUtilisateur, TentativeConnexion, VerrouillageCompte
+from models.securite import SessionUtilisateur, TentativeConnexion
 
 # Configuration
 SECRET_KEY = "gabonedu-secret-key-change-in-production-2024"

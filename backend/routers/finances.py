@@ -15,7 +15,7 @@ from models.finances import (
     EcritureComptable, Fournisseur, DemandeAchat, BienImmobilier,
     InterventionMaintenance, Personnel, CongeAbsence, EvaluationPersonnel,
     HeureVacation, ModePaiement, TypeRelance, CanalRelance, StatutBudget,
-    StatutDemandeAchat, UrgenceAchat, EtatBien, TypeBien, TypeMaintenance,
+    StatutDemandeAchat, UrgenceAchat, TypeBien, TypeBien, TypeMaintenance,
     UrgenceMaintenance, TypePersonnel, StatutPersonnel, TypeConge
 )
 from schemas.finances import (

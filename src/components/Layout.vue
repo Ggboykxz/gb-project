@@ -8,6 +8,8 @@ import {
   BookOpen, 
   FlaskConical, 
   Banknote,
+  GraduationCap,
+  RefreshCw,
   LogOut,
   Menu,
   Bell,
@@ -26,8 +28,10 @@ const sidebarItems = computed(() => [
   { icon: Building2, label: 'Administration', path: '/administration' },
   { icon: Users, label: 'Étudiants', path: '/etudiants' },
   { icon: BookOpen, label: 'Pédagogie', path: '/pedagogie' },
+  { icon: GraduationCap, label: 'Vie Étudiante', path: '/vie-etudiante' },
   { icon: FlaskConical, label: 'Recherche', path: '/recherche' },
   { icon: Banknote, label: 'Finances', path: '/finances' },
+  { icon: RefreshCw, label: 'Synchronisation', path: '/sync' },
 ])
 
 const isSidebarOpen = computed(() => true)

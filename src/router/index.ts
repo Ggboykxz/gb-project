@@ -42,6 +42,16 @@ const routes: RouteRecordRaw[] = [
         name: 'Finances',
         component: () => import('@/views/finances/FinancesView.vue'),
       },
+      {
+        path: 'vie-etudiante',
+        name: 'VieEtudiante',
+        component: () => import('@/views/vie_etudiante/VieEtudianteView.vue'),
+      },
+      {
+        path: 'sync',
+        name: 'Synchronisation',
+        component: () => import('@/views/sync/SyncCenterView.vue'),
+      },
     ],
   },
 ]

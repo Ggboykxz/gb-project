@@ -1,4 +1,4 @@
-"""Modèle Utilisateur avec rôles et permissions"""
+"""Modèle Utilisateur avec rôles et permissions - VERSION CORRIGÉE"""
 from sqlalchemy import Column, String, DateTime, Boolean, Enum as SQLEnum, JSON
 from sqlalchemy.orm import relationship
 import enum
@@ -21,7 +21,7 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     nom = Column(String(100), nullable=False)
     prenom = Column(String(100), nullable=False)
-    password_hash = Column(String(255), nullable=False)
+    hashed_password = Column(String(255), nullable=False)
     role = Column(SQLEnum(Role), nullable=False, default=Role.ETUDIANT)
     is_active = Column(Boolean, default=True)
     is_verified = Column(Boolean, default=False)
@@ -31,12 +31,9 @@ class User(Base):
     updated_at = Column(DateTime, onupdate=datetime.utcnow)
     last_login = Column(DateTime, nullable=True)
     metadata_json = Column(JSON, default=dict)
-    
-    # Relations
-    inscriptions = relationship("Inscription", back_populates="etudiant", foreign_keys="Inscription.etudiant_id")
-    cours_enseignes = relationship("Cours", back_populates="enseignant")
-    notes_saisies = relationship("Note", back_populates="saisi_par")
-    audit_logs = relationship("AuditLog", back_populates="user")
-    
-    def __repr__(self):
-        return f"<User {self.email} ({self.role.value})>"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.id:
+            import uuid
+            self.id = str(uuid.uuid4())

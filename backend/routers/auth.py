@@ -29,7 +29,7 @@ router = APIRouter(prefix="/auth", tags=["Authentification"])
 
 
 @router.post("/register", response_model=UserProfile, status_code=status.HTTP_201_CREATED)
-async def register(user_data: UserCreate, db: AsyncSession):
+async def register(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
     """
     Enregistrer un nouvel utilisateur.
     Validation du mot de passe + création avec rôle par défaut.
@@ -172,7 +172,7 @@ async def login(
 
 
 @router.post("/refresh", response_model=TokenResponse)
-async def refresh_token(refresh_token: str, db: AsyncSession):
+async def refresh_token(refresh_token: str, db: AsyncSession = Depends(get_db)):
     """
     Rafraîchir un token d'accès expiré.
     """

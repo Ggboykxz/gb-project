@@ -1,240 +1,157 @@
-"""
-Modèles pour la vie étudiante et services
-"""
-from sqlalchemy import Column, Integer, String, Text, Date, DateTime, ForeignKey, Boolean, Float, JSON, Enum as SQLEnum
-from sqlalchemy.orm import relationship
-from sqlalchemy.sql import func
-import enum
-
+"""Modèles Vie Étudiante - VERSION CORRIGÉE"""
+from sqlalchemy import Column, String, DateTime, Integer, JSON, Boolean, ForeignKey
+from datetime import datetime
 from database import Base
-
-
-class TypeExperience(str, enum.Enum):
-    STAGE = "stage"
-    PROJET = "projet"
-    CERTIFICATION = "certification"
-    BENEVOLAT = "benevolat"
-
-
-class VisibilitePortfolio(str, enum.Enum):
-    PRIVE = "prive"
-    ETABLISSEMENT = "etablissement"
-    PUBLIC = "public"
-
+import uuid
 
 class Portfolio(Base):
     __tablename__ = "portfolios"
-
-    id = Column(Integer, primary_key=True, index=True)
-    etudiant_id = Column(Integer, ForeignKey("etudiants.id"), unique=True, nullable=False)
-    bio = Column(Text, nullable=True)
+    id = Column(String(36), primary_key=True)
+    etudiant_id = Column(String(36), ForeignKey("etudiants.id"), nullable=False)
+    bio = Column(String(500))
     competences_json = Column(JSON, default=list)
     langues_json = Column(JSON, default=list)
-    visibilite = Column(SQLEnum(VisibilitePortfolio), default=VisibilitePortfolio.PRIVE)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-
-    # Relationships
-    etudiant = relationship("Etudiant", back_populates="portfolio")
-    experiences = relationship("ExperiencePortfolio", back_populates="portfolio", cascade="all, delete-orphan")
-
+    visibilite = Column(String(20), default="privé")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.id:
+            self.id = str(uuid.uuid4())
 
 class ExperiencePortfolio(Base):
     __tablename__ = "experiences_portfolio"
-
-    id = Column(Integer, primary_key=True, index=True)
-    portfolio_id = Column(Integer, ForeignKey("portfolios.id"), nullable=False)
-    type_exp = Column(SQLEnum(TypeExperience), nullable=False)
+    id = Column(String(36), primary_key=True)
+    portfolio_id = Column(String(36), ForeignKey("portfolios.id"), nullable=False)
+    type_experience = Column(String(30))  # stage, projet, certification, benevolat
     titre = Column(String(200), nullable=False)
-    organisation = Column(String(200), nullable=True)
-    date_debut = Column(Date, nullable=True)
-    date_fin = Column(Date, nullable=True)
-    description = Column(Text, nullable=True)
-    fichier_url = Column(String(500), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-
-    # Relationships
-    portfolio = relationship("Portfolio", back_populates="experiences")
-
+    organisation = Column(String(200))
+    date_debut = Column(DateTime)
+    date_fin = Column(DateTime)
+    description = Column(String(1000))
+    fichier_url = Column(String(500))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.id:
+            self.id = str(uuid.uuid4())
 
 class TypeBourse(Base):
-    __tablename__ = "types_bourse"
-
-    id = Column(Integer, primary_key=True, index=True)
-    libelle = Column(String(100), nullable=False, unique=True)
-    montant_mensuel = Column(Integer, nullable=False)  # En FCFA
+    __tablename__ = "types_bourses"
+    id = Column(String(36), primary_key=True)
+    libelle = Column(String(200), nullable=False)
+    montant_mensuel = Column(Integer)
     criteres_json = Column(JSON, default=dict)
-    quota_annuel = Column(Integer, nullable=True)
-    financeur = Column(String(200), nullable=True)
-    actif = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-
-    # Relationships
-    dossiers = relationship("DossierBourse", back_populates="type_bourse")
-
-
-class StatutDossierBourse(str, enum.Enum):
-    BROUILLON = "brouillon"
-    SOUMIS = "soumis"
-    EN_ETUDE = "en_etude"
-    ACCEPTE = "accepte"
-    REFUSE = "refuse"
-    EN_ATTENTE_DOC = "en_attente_doc"
-
+    quota_annuel = Column(Integer)
+    financeur = Column(String(200))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.id:
+            self.id = str(uuid.uuid4())
 
 class DossierBourse(Base):
-    __tablename__ = "dossiers_bourse"
-
-    id = Column(Integer, primary_key=True, index=True)
-    etudiant_id = Column(Integer, ForeignKey("etudiants.id"), nullable=False)
-    type_bourse_id = Column(Integer, ForeignKey("types_bourse.id"), nullable=False)
-    annee_academique = Column(String(9), nullable=False)  # ex: "2024-2025"
-    statut = Column(SQLEnum(StatutDossierBourse), default=StatutDossierBourse.BROUILLON)
-    score_social = Column(Float, nullable=True)
+    __tablename__ = "dossiers_bourses"
+    id = Column(String(36), primary_key=True)
+    etudiant_id = Column(String(36), ForeignKey("etudiants.id"), nullable=False)
+    type_bourse_id = Column(String(36), ForeignKey("types_bourses.id"), nullable=False)
+    annee = Column(String(20))
+    statut = Column(String(30), default="en_attente")
+    score_social = Column(Integer)
     documents_json = Column(JSON, default=list)
-    decision = Column(String(500), nullable=True)
-    date_decision = Column(DateTime(timezone=True), nullable=True)
-    commentaire = Column(Text, nullable=True)
-    soumis_le = Column(DateTime(timezone=True), nullable=True)
-    traite_par = Column(Integer, ForeignKey("users.id"), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-
-    # Relationships
-    type_bourse = relationship("TypeBourse", back_populates="dossiers")
-    etudiant = relationship("Etudiant", back_populates="dossiers_bourse")
-
-
-class TypeAlerteEtudiant(str, enum.Enum):
-    DECROCHAGE = "decrochage"
-    ECHEC = "echec"
-    ABSENCE_REPETEE = "absence_repetee"
-    RETARD_PAIEMENT = "retard_paiement"
-    AUTRE = "autre"
-
-
-class StatutSuivi(str, enum.Enum):
-    OUVERT = "ouvert"
-    EN_COURS = "en_cours"
-    RESOLU = "resolu"
-    CLOS = "clos"
-
+    decision = Column(String(30))
+    date_decision = Column(DateTime)
+    commentaire = Column(String(500))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.id:
+            self.id = str(uuid.uuid4())
 
 class SuiviEtudiant(Base):
     __tablename__ = "suivis_etudiants"
-
-    id = Column(Integer, primary_key=True, index=True)
-    etudiant_id = Column(Integer, ForeignKey("etudiants.id"), nullable=False)
-    conseiller_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    type_alerte = Column(SQLEnum(TypeAlerteEtudiant), nullable=False)
-    statut = Column(SQLEnum(StatutSuivi), default=StatutSuivi.OUVERT)
+    id = Column(String(36), primary_key=True)
+    etudiant_id = Column(String(36), ForeignKey("etudiants.id"), nullable=False)
+    conseiller_id = Column(String(36), ForeignKey("users.id"), nullable=True)
+    type_alerte = Column(String(50))  # decrochage, echec, absence_repetee
+    statut = Column(String(30), default="actif")
     notes_suivi_json = Column(JSON, default=list)
-    objectifs_json = Column(JSON, default=list)
-    date_creation = Column(DateTime(timezone=True), server_default=func.now())
-    date_cloture = Column(DateTime(timezone=True), nullable=True)
-
-    # Relationships
-    etudiant = relationship("Etudiant", back_populates="suivis")
-    conseiller = relationship("User", foreign_keys=[conseiller_id])
-
-
-class TypeOffre(str, enum.Enum):
-    STAGE = "stage"
-    CDI = "cdi"
-    CDD = "cdd"
-    ALTERNANCE = "alternance"
-
-
-class StatutOffre(str, enum.Enum):
-    ACTIVE = "active"
-    POURVUE = "pourvue"
-    EXPIREE = "expiree"
-    SUSPENDUE = "suspendue"
-
-
-class OffreStageEmploi(Base):
-    __tablename__ = "offres_stage_emploi"
-
-    id = Column(Integer, primary_key=True, index=True)
-    entreprise_id = Column(Integer, ForeignKey("entreprises_partenaires.id"), nullable=False)
-    titre = Column(String(200), nullable=False)
-    description = Column(Text, nullable=False)
-    type_offre = Column(SQLEnum(TypeOffre), nullable=False)
-    domaine = Column(String(100), nullable=True)
-    localisation_gabon = Column(String(100), nullable=False)
-    date_debut = Column(Date, nullable=False)
-    date_limite = Column(Date, nullable=True)
-    statut = Column(SQLEnum(StatutOffre), default=StatutOffre.ACTIVE)
-    contact_json = Column(JSON, default=dict)
-    competences_requises_json = Column(JSON, default=list)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-
-    # Relationships
-    entreprise = relationship("EntreprisePartenaire", back_populates="offres")
-    candidatures = relationship("Candidature", back_populates="offre", cascade="all, delete-orphan")
-
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.id:
+            self.id = str(uuid.uuid4())
 
 class EntreprisePartenaire(Base):
     __tablename__ = "entreprises_partenaires"
-
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(String(36), primary_key=True)
     raison_sociale = Column(String(200), nullable=False)
-    secteur = Column(String(100), nullable=True)
-    localisation = Column(String(100), nullable=True)
-    contact_rh = Column(String(200), nullable=True)
-    email = Column(String(100), nullable=True)
-    telephone = Column(String(20), nullable=True)
+    secteur = Column(String(100))
+    localisation = Column(String(100))
+    contact_rh = Column(String(200))
     conventions_json = Column(JSON, default=list)
-    actif = Column(Boolean, default=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    evaluation = Column(Integer)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.id:
+            self.id = str(uuid.uuid4())
 
-    # Relationships
-    offres = relationship("OffreStageEmploi", back_populates="entreprise")
-
-
-class StatutCandidature(str, enum.Enum):
-    SOUMISE = "soumise"
-    EN_ETUDE = "en_etude"
-    ACCEPTEE = "acceptee"
-    REFUSEE = "refusee"
-    RETIREE = "retiree"
-
+class OffreStageEmploi(Base):
+    __tablename__ = "offres_stages_emplois"
+    id = Column(String(36), primary_key=True)
+    entreprise_id = Column(String(36), ForeignKey("entreprises_partenaires.id"), nullable=False)
+    titre = Column(String(200), nullable=False)
+    description = Column(String(1000))
+    type_offre = Column(String(30))  # stage, cdi, cdd, alternance
+    domaine = Column(String(100))
+    localisation_gabon = Column(String(100))
+    date_debut = Column(DateTime)
+    date_limite = Column(DateTime)
+    statut = Column(String(30), default="active")
+    contact_json = Column(JSON, default=dict)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.id:
+            self.id = str(uuid.uuid4())
 
 class Candidature(Base):
     __tablename__ = "candidatures"
-
-    id = Column(Integer, primary_key=True, index=True)
-    etudiant_id = Column(Integer, ForeignKey("etudiants.id"), nullable=False)
-    offre_id = Column(Integer, ForeignKey("offres_stage_emploi.id"), nullable=False)
-    date_candidature = Column(DateTime(timezone=True), server_default=func.now())
-    statut = Column(SQLEnum(StatutCandidature), default=StatutCandidature.SOUMISE)
-    cv_url = Column(String(500), nullable=True)
-    lettre_url = Column(String(500), nullable=True)
-    commentaire = Column(Text, nullable=True)
-    date_reponse = Column(DateTime(timezone=True), nullable=True)
-
-    # Relationships
-    etudiant = relationship("Etudiant", back_populates="candidatures")
-    offre = relationship("OffreStageEmploi", back_populates="candidatures")
-
+    id = Column(String(36), primary_key=True)
+    etudiant_id = Column(String(36), ForeignKey("etudiants.id"), nullable=False)
+    offre_id = Column(String(36), ForeignKey("offres_stages_emploi.id"), nullable=False)
+    date_candidature = Column(DateTime, default=datetime.utcnow)
+    statut = Column(String(30), default="en_attente")
+    cv_url = Column(String(500))
+    lettre_url = Column(String(500))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.id:
+            self.id = str(uuid.uuid4())
 
 class Alumni(Base):
     __tablename__ = "alumni"
-
-    id = Column(Integer, primary_key=True, index=True)
-    etudiant_id = Column(Integer, ForeignKey("etudiants.id"), unique=True, nullable=False)
-    promo = Column(String(9), nullable=False)  # ex: "2023-2024"
-    poste_actuel = Column(String(200), nullable=True)
-    entreprise_actuelle = Column(String(200), nullable=True)
-    localisation = Column(String(100), nullable=True)
-    linkedin_url = Column(String(300), nullable=True)
+    id = Column(String(36), primary_key=True)
+    etudiant_id = Column(String(36), ForeignKey("etudiants.id"), nullable=False)
+    promo = Column(String(20))
+    poste_actuel = Column(String(200))
+    entreprise_actuelle = Column(String(200))
+    localisation = Column(String(100))
+    linkedin_url = Column(String(300))
     disponible_mentorat = Column(Boolean, default=False)
     domaines_expertise_json = Column(JSON, default=list)
-    email_personnel = Column(String(100), nullable=True)
-    telephone_personnel = Column(String(20), nullable=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-
-    # Relationships
-    etudiant = relationship("Etudiant", back_populates="alumni")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.id:
+            self.id = str(uuid.uuid4())

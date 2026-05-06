@@ -156,7 +156,6 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { useSyncStore } from '@/stores/sync';
-import { toast } from 'vue-sonner';
 
 const syncStore = useSyncStore();
 
@@ -170,38 +169,22 @@ async function fetchStatus() {
 
 async function handleSyncAll() {
   const result = await syncStore.syncAll();
-  if (result.success) {
-    toast.success(result.message);
-  } else {
-    toast.error(result.message);
-  }
+  alert(result.success ? 'Synchronisation réussie' : 'Échec: ' + result.message);
 }
 
 async function handleUpload() {
   const result = await syncStore.uploadChanges();
-  if (result.success) {
-    toast.success(result.message);
-  } else {
-    toast.error(result.message);
-  }
+  alert(result.success ? 'Upload réussi' : 'Échec: ' + result.message);
 }
 
 async function handleDownload() {
   const result = await syncStore.downloadChanges();
-  if (result.success) {
-    toast.success(result.message);
-  } else {
-    toast.error(result.message);
-  }
+  alert(result.success ? 'Download réussi' : 'Échec: ' + result.message);
 }
 
 async function resolveConflict(conflictId: number, resolution: 'local' | 'remote') {
   const result = await syncStore.resolveConflict(conflictId, resolution);
-  if (result.success) {
-    toast.success('Conflit résolu avec succès');
-  } else {
-    toast.error(result.message);
-  }
+  alert(result.success ? 'Conflit résolu' : 'Échec: ' + result.message);
 }
 
 function formatDateTime(date: Date): string {

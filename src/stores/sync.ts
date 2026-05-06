@@ -4,7 +4,7 @@
  */
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { api } from '@/lib/api';
+import api from '@/lib/api';
 
 export interface SyncStatus {
   pending_operations: number;

@@ -7,7 +7,8 @@ from typing import List, Optional
 
 from database import get_db
 from security.auth import get_current_user, require_permission
-from models.user import User, UserRole
+from models.user import User
+from schemas.auth import UserRole
 from schemas.vie_etudiante import (
     PortfolioResponse, PortfolioCreate, PortfolioUpdate,
     ExperiencePortfolioResponse, ExperiencePortfolioCreate,

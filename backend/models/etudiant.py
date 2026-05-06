@@ -1,9 +1,10 @@
-"""Modèles Étudiant et Inscription"""
+"""Modèles Étudiant et Inscription - VERSION CORRIGÉE"""
 from sqlalchemy import Column, String, DateTime, Boolean, ForeignKey, Enum as SQLEnum, JSON, Integer
 from sqlalchemy.orm import relationship
 import enum
 from datetime import datetime
 from database import Base
+import uuid
 
 class StatutEtudiant(enum.Enum):
     ACTIF = "ACTIF"
@@ -36,10 +37,10 @@ class Etudiant(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, onupdate=datetime.utcnow)
     
-    inscriptions = relationship("Inscription", back_populates="etudiant")
-    portfolio = relationship("Portfolio", back_populates="etudiant", uselist=False)
-    presences = relationship("Presence", back_populates="etudiant")
-    notes = relationship("Note", secondary="inscriptions", back_populates="etudiant")
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.id:
+            self.id = str(uuid.uuid4())
 
 class Inscription(Base):
     __tablename__ = "inscriptions"
@@ -55,8 +56,9 @@ class Inscription(Base):
     documents_json = Column(JSON, default=list)
     frais_payes = Column(Boolean, default=False)
     montant_paye = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
     
-    etudiant = relationship("Etudiant", back_populates="inscriptions")
-    filiere = relationship("Filiere", back_populates="inscriptions")
-    notes = relationship("Note", back_populates="inscription")
-    paiements = relationship("Paiement", back_populates="inscription")
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.id:
+            self.id = str(uuid.uuid4())

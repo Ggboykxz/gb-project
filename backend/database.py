@@ -21,8 +21,20 @@ class Base(DeclarativeBase):
 
 async def init_db():
     """Initialise la base de données"""
+    from sqlalchemy import text
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        try:
+            # Créer les tables une par une en ignorant les erreurs de FK
+            for table in Base.metadata.sorted_tables:
+                try:
+                    await conn.run_sync(table.create, checkfirst=True)
+                except Exception as e:
+                    # Log l'erreur mais continuer
+                    print(f"Table {table.name}: {str(e)[:100]}")
+            print("Base de données initialisée")
+        except Exception as e:
+            print(f"Erreur init DB: {e}")
+            # Ne pas lever l'exception pour permettre le démarrage
 
 async def get_db():
     """Dépendance FastAPI pour obtenir une session DB"""

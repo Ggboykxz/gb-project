@@ -13,7 +13,7 @@ from sqlalchemy import select, update, delete
 from sqlalchemy.orm import selectinload
 
 from models.sync import SyncQueue, SyncLog, ConflitSync, SyncConfig
-from database import get_db_session
+from database import get_db
 
 # Configuration
 SYNC_SERVER_URL = "https://sync.gabon-edu.ga/api/v1"  # Mock en dev
