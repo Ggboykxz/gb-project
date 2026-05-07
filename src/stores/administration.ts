@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { api } from '../lib/api'
+import api from '@/lib/api'
 
 export interface Etudiant {
   id: string
@@ -80,7 +80,7 @@ export const useAdministrationStore = defineStore('administration', () => {
     loading.value = true
     error.value = null
     try {
-      const response = await api.get('/api/v1/etudiants')
+      const response = await api.get('/etudiants')
       etudiants.value = response.data
     } catch (e: any) {
       error.value = e.message
@@ -92,7 +92,7 @@ export const useAdministrationStore = defineStore('administration', () => {
   async function createEtudiant(data: Partial<Etudiant>) {
     loading.value = true
     try {
-      const response = await api.post('/api/v1/etudiants', data)
+      const response = await api.post('/etudiants', data)
       etudiants.value.push(response.data)
       return response.data
     } catch (e: any) {
@@ -106,7 +106,7 @@ export const useAdministrationStore = defineStore('administration', () => {
   async function updateEtudiant(id: string, data: Partial<Etudiant>) {
     loading.value = true
     try {
-      const response = await api.put(`/api/v1/etudiants/${id}`, data)
+      const response = await api.put(`/etudiants/${id}`, data)
       const index = etudiants.value.findIndex(e => e.id === id)
       if (index !== -1) etudiants.value[index] = response.data
       return response.data
@@ -122,7 +122,7 @@ export const useAdministrationStore = defineStore('administration', () => {
   async function fetchInscriptions() {
     loading.value = true
     try {
-      const response = await api.get('/api/v1/inscriptions')
+      const response = await api.get('/inscriptions')
       inscriptions.value = response.data
     } catch (e: any) {
       error.value = e.message
@@ -134,7 +134,7 @@ export const useAdministrationStore = defineStore('administration', () => {
   async function createInscription(data: Partial<Inscription>) {
     loading.value = true
     try {
-      const response = await api.post('/api/v1/inscriptions', data)
+      const response = await api.post('/inscriptions', data)
       inscriptions.value.push(response.data)
       return response.data
     } catch (e: any) {
@@ -148,7 +148,7 @@ export const useAdministrationStore = defineStore('administration', () => {
   async function validerInscription(id: string, statut: string) {
     loading.value = true
     try {
-      const response = await api.patch(`/api/v1/inscriptions/${id}/valider`, { statut })
+      const response = await api.patch(`/inscriptions/${id}/valider`, { statut })
       const index = inscriptions.value.findIndex(i => i.id === id)
       if (index !== -1) inscriptions.value[index] = response.data
       return response.data
@@ -164,7 +164,7 @@ export const useAdministrationStore = defineStore('administration', () => {
   async function fetchFilieres() {
     loading.value = true
     try {
-      const response = await api.get('/api/v1/filieres')
+      const response = await api.get('/filieres')
       filieres.value = response.data
     } catch (e: any) {
       error.value = e.message
@@ -176,7 +176,7 @@ export const useAdministrationStore = defineStore('administration', () => {
   async function createFiliere(data: Partial<Filiere>) {
     loading.value = true
     try {
-      const response = await api.post('/api/v1/filieres', data)
+      const response = await api.post('/filieres', data)
       filieres.value.push(response.data)
       return response.data
     } catch (e: any) {
@@ -191,7 +191,7 @@ export const useAdministrationStore = defineStore('administration', () => {
   async function fetchUes() {
     loading.value = true
     try {
-      const response = await api.get('/api/v1/ues')
+      const response = await api.get('/ues')
       ues.value = response.data
     } catch (e: any) {
       error.value = e.message
@@ -203,7 +203,7 @@ export const useAdministrationStore = defineStore('administration', () => {
   async function createUE(data: Partial<UE>) {
     loading.value = true
     try {
-      const response = await api.post('/api/v1/ues', data)
+      const response = await api.post('/ues', data)
       ues.value.push(response.data)
       return response.data
     } catch (e: any) {

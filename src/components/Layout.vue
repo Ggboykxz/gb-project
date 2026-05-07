@@ -36,13 +36,14 @@ const sidebarItems = computed(() => [
 
 const isSidebarOpen = computed(() => true)
 
+const syncStatusText = computed(() => {
+  if (syncStore.isSyncing) return 'sync'
+  return syncStore.isOnline ? 'online' : 'offline'
+})
+
 const syncStatusColor = computed(() => {
-  switch (syncStore.status) {
-    case 'online': return 'bg-success text-white'
-    case 'offline': return 'bg-red-500 text-white'
-    case 'syncing': return 'bg-orange-500 text-white'
-    default: return 'bg-gray-400 text-white'
-  }
+  if (syncStore.isSyncing) return 'bg-orange-500 text-white'
+  return syncStore.isOnline ? 'bg-success text-white' : 'bg-red-500 text-white'
 })
 
 const syncIcon = computed(() => syncStore.isOnline ? Wifi : WifiOff)
@@ -123,8 +124,8 @@ function handleLogout() {
           <div class="flex items-center gap-4">
             <!-- Sync Status -->
             <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100">
-              <component :is="syncIcon" :class="['w-4 h-4', syncStatusColor]" />
-              <span class="text-xs font-medium capitalize">{{ syncStore.status }}</span>
+              <component :is="syncIcon" :class="['w-4 h-4', syncStore.isOnline ? 'text-green-500' : 'text-red-500']" />
+              <span class="text-xs font-medium capitalize">{{ syncStatusText }}</span>
             </div>
 
             <!-- Notifications -->
