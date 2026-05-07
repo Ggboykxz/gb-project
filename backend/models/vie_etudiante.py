@@ -126,7 +126,7 @@ class Candidature(Base):
     __tablename__ = "candidatures"
     id = Column(String(36), primary_key=True)
     etudiant_id = Column(String(36), ForeignKey("etudiants.id"), nullable=False)
-    offre_id = Column(String(36), ForeignKey("offres_stages_emplos.id"), nullable=False)
+    offre_id = Column(String(36), ForeignKey("offres_stages_emplois.id"), nullable=False)
     date_candidature = Column(DateTime, default=datetime.utcnow)
     statut = Column(String(30), default="en_attente")
     cv_url = Column(String(500))

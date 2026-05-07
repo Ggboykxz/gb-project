@@ -155,56 +155,26 @@ async def get_current_user(
 
 async def check_account_lockout(email: str, db: AsyncSession) -> bool:
     """Check if account is locked due to too many failed attempts"""
+    thirty_min_ago = datetime.utcnow() - timedelta(minutes=30)
     result = await db.execute(
-        select(VerrouillageCompte).where(
-            VerrouillageCompte.email == email,
-            VerrouillageCompte.deverrouillage_apres > datetime.utcnow()
+        select(TentativeConnexion).where(
+            TentativeConnexion.email == email,
+            TentativeConnexion.succes == False,
+            TentativeConnexion.date_essai >= thirty_min_ago
         )
     )
-    lockout = result.scalar_one_or_none()
-    
-    if lockout:
-        return True
-    
-    # Clean up expired lockouts
-    await db.execute(
-        VerrouillageCompte.__table__.delete().where(
-            VerrouillageCompte.deverrouillage_apres < datetime.utcnow()
-        )
-    )
-    await db.commit()
-    
-    return False
+    failed_attempts = result.scalars().all()
+    return len(failed_attempts) >= 5
 
 
 async def record_login_attempt(email: str, success: bool, db: AsyncSession, ip_address: str = "127.0.0.1"):
-    """Record login attempt and handle lockout"""
+    """Record login attempt"""
     attempt = TentativeConnexion(
         email=email,
         succes=success,
         adresse_ip=ip_address
     )
     db.add(attempt)
-    
-    if not success:
-        thirty_min_ago = datetime.utcnow() - timedelta(minutes=30)
-        result = await db.execute(
-            select(TentativeConnexion).where(
-                TentativeConnexion.email == email,
-                TentativeConnexion.succes == False,
-                TentativeConnexion.timestamp >= thirty_min_ago
-            )
-        )
-        failed_attempts = result.scalars().all()
-        
-        if len(failed_attempts) >= 5:
-            lockout = VerrouillageCompte(
-                email=email,
-                deverrouillage_apres=datetime.utcnow() + timedelta(minutes=30),
-                raison="5 tentatives échouées consécutives"
-            )
-            db.add(lockout)
-    
     await db.commit()
 
 

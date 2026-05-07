@@ -20,7 +20,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
+app.include_router(auth.router, prefix="/api/v1", tags=["Auth"])
 app.include_router(administration.router, prefix="/api/v1/administration", tags=["Administration"])
 app.include_router(vie_etudiante.router, prefix="/api/v1/vie-etudiante", tags=["Vie Étudiante"])
 app.include_router(finances.router, prefix="/api/v1/finances", tags=["Finances"])

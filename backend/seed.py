@@ -5,21 +5,20 @@ Configuration: Centre Universitaire de Koulamoutou (CUK) - USTM
 import asyncio
 import sys
 from datetime import datetime, timedelta
-from decimal import Decimal
 import random
 
 sys.path.insert(0, '/workspace/backend')
 
-from database import async_engine, get_async_session, init_db
-from sqlalchemy.ext.asyncio import AsyncSession
+from database import async_engine, async_session_maker, init_db
+
 from sqlalchemy import text
 
 # Import des modèles (depuis le package models)
 from models import (
     Etudiant, Inscription, UE, Filiere, Maquette,
-    Salle, Cours, Presence, Note,
-    User as Utilisateur, UserRole as RoleType
+    Salle, Note
 )
+from models.user import User, Role as RoleType
 from models.vie_etudiante import Portfolio, ExperiencePortfolio, TypeBourse, DossierBourse
 from models.finances import FraisScolarite, Paiement
 
@@ -31,13 +30,13 @@ ETABLISSEMENT_DATA = {
 }
 
 FILIERES_DATA = [
-    {"code": "AEC", "libelle": "Architecture et Éco-construction", "domaine": "Ingénierie & Construction", "niveau": "Licence Pro", "duree_annees": 3},
-    {"code": "CI", "libelle": "Chimie Industrielle", "domaine": "Sciences & Technologies", "niveau": "Licence Pro", "duree_annees": 3},
-    {"code": "GTR", "libelle": "Génie Thermique et Énergies Renouvelables", "domaine": "Énergie", "niveau": "Licence Pro", "duree_annees": 3},
-    {"code": "IC", "libelle": "Informatique et Communication", "domaine": "Numérique", "niveau": "Licence Pro", "duree_annees": 3},
-    {"code": "PM", "libelle": "Productique Mécanique", "domaine": "Industrie", "niveau": "Licence Pro", "duree_annees": 3},
-    {"code": "ABB", "libelle": "Analyses Biologiques et Biochimiques", "domaine": "Santé", "niveau": "Licence Pro", "duree_annees": 3},
-    {"code": "MEB", "libelle": "Maintenance des Équipements Biomédicaux", "domaine": "Santé & Technologie", "niveau": "Licence Pro", "duree_annees": 3},
+    {"code": "AEC", "libelle": "Architecture et Éco-construction", "domaine": "Ingénierie & Construction", "niveau": "L3", "duree_annees": 3},
+    {"code": "CI", "libelle": "Chimie Industrielle", "domaine": "Sciences & Technologies", "niveau": "L3", "duree_annees": 3},
+    {"code": "GTR", "libelle": "Génie Thermique et Énergies Renouvelables", "domaine": "Énergie", "niveau": "L3", "duree_annees": 3},
+    {"code": "IC", "libelle": "Informatique et Communication", "domaine": "Numérique", "niveau": "L3", "duree_annees": 3},
+    {"code": "PM", "libelle": "Productique Mécanique", "domaine": "Industrie", "niveau": "L3", "duree_annees": 3},
+    {"code": "ABB", "libelle": "Analyses Biologiques et Biochimiques", "domaine": "Santé", "niveau": "L3", "duree_annees": 3},
+    {"code": "MEB", "libelle": "Maintenance des Équipements Biomédicaux", "domaine": "Santé & Technologie", "niveau": "L3", "duree_annees": 3},
 ]
 
 # Unités d'enseignement par filière (simplifié pour la démo)
@@ -99,7 +98,7 @@ async def seed_database():
     print("📦 Initialisation des tables de la base de données...")
     await init_db()
     
-    async with AsyncSession(async_engine) as session:
+    async with async_session_maker() as session:
         try:
             # 1. Skip établissement (modèle n'existe pas encore)
             print("\n🏫 Configuration pour le Centre Universitaire de Koulamoutou (CUK)...")
@@ -210,7 +209,7 @@ async def seed_database():
             annee_courante = "2024-2025"
             for code_filiere, ues in ues_par_filiere.items():
                 ues_json = [{"ue_id": ue.id, "semestre": ue.semestre} for ue in ues]
-                maquette = MaquettePedagogique(
+                maquette = Maquette(
                     filiere_id=filieres[code_filiere].id,
                     annee_academique=annee_courante,
                     ues_json=ues_json,
@@ -238,9 +237,9 @@ async def seed_database():
                 salle = Salle(
                     nom=s["nom"],
                     capacite=s["capacite"],
-                    type=s["type"],
-                    batiment=s["batiment"],
+                    type_salle=s["type"],
                     equipements_json=s.get("equipements", "{}"),
+                    batiment=s["batiment"],
                     disponible=True
                 )
                 session.add(salle)
@@ -273,7 +272,7 @@ async def seed_database():
                     telephone=f"+241 {random.randint(10000000, 99999999)}",
                     email=f"{prenom.lower()}.{nom.lower()}{i}@cuk.ga",
                     photo_url=None,
-                    statut="actif"
+                    statut="ACTIF"
                 )
                 session.add(etudiant)
                 etudiants_par_filiere[code_filiere].append((etudiant, niveau))
@@ -298,15 +297,13 @@ async def seed_database():
             for code_filiere, etudiants_niveaux in etudiants_par_filiere.items():
                 filiere = filieres[code_filiere]
                 for etudiant, niveau in etudiants_niveaux:
-                    type_inscription = "nouveau" if niveau == "L1" else "reinscription"
-                    
                     inscription = Inscription(
                         etudiant_id=etudiant.id,
                         annee_academique=annee_courante,
                         filiere_id=filiere.id,
                         niveau=niveau,
-                        type=type_inscription,
-                        statut_workflow="confirmé" if random.random() > 0.2 else random.choice(["soumis", "validé_scol", "validé_doyen"]),
+                        type_inscription="NOUVEAU" if niveau == "L1" else "REINSCRIPTION",
+                        statut_workflow="CONFIRME",
                         date_soumission=datetime.now() - timedelta(days=random.randint(1, 60)),
                         documents_json='{"cin": true, "bac": true, "casier_judiciaire": true}',
                         frais_payes=random.choice([True, True, True, False])  # 75% ont payé
@@ -325,8 +322,8 @@ async def seed_database():
                         filiere_id=filiere.id,
                         annee_academique=annee_courante,
                         niveau=niveau,
-                        montant_inscription_fcfa=25000,
-                        montant_scolarite_fcfa=frais_base,
+                        montant_inscription=25000,
+                        montant_scolarite=frais_base,
                         echeancier_json=[
                             {"echeance": "Septembre", "montant": 50000, "type": "inscription"},
                             {"echeance": "Novembre", "montant": 50000, "type": "scolarite"},
@@ -360,9 +357,9 @@ async def seed_database():
                         
                         paiement = Paiement(
                             inscription_id=inscription.id,
-                            montant_fcfa=montant,
+                            montant=montant,
                             date_paiement=datetime.now() - timedelta(days=random.randint(1, 90)),
-                            mode=mode,
+                            mode_paiement=mode,
                             reference_transaction=f"TXN{random.randint(100000000, 999999999)}",
                             operateur=random.choice(operateurs) if mode == "mobile_money" else None,
                             recu_url=f"/recus/recu_{inscription.id}_{paiements_count}.pdf",

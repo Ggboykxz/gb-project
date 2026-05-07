@@ -25,7 +25,7 @@ from security.auth import (
     invalidate_user_sessions
 )
 
-router = APIRouter(prefix="/auth", tags=["Authentification"])
+router = APIRouter(tags=["Authentification"])
 
 
 @router.post("/register", response_model=UserProfile, status_code=status.HTTP_201_CREATED)
