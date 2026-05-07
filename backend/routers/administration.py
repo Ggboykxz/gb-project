@@ -3,6 +3,7 @@ Routers pour le module Administration
 """
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, func
 from typing import List
 
 from database import get_db
@@ -26,7 +27,7 @@ from services.administration import (
     verify_diplome_service
 )
 
-router = APIRouter(prefix="/api/v1/admin", tags=["Administration"])
+router = APIRouter(tags=["Administration"])
 
 # ==================== ÉTUDIANTS ====================
 
@@ -173,3 +174,22 @@ async def verify_diplome(
     if not result:
         raise HTTPException(status_code=404, detail="Diplôme non trouvé ou invalide")
     return result
+
+# ==================== STATS ====================
+
+@router.get("/stats")
+async def get_stats(db: AsyncSession = Depends(get_db)):
+    """Statistiques pour le dashboard"""
+    etudiants_count = await db.execute(select(func.count(Etudiant.id)))
+    filieres_count = await db.execute(select(func.count(Filiere.id)))
+    inscriptions_count = await db.execute(select(func.count(Inscription.id)))
+    
+    from models.finances import Paiement
+    paiements_count = await db.execute(select(func.count(Paiement.id)))
+    
+    return {
+        "etudiants": etudiants_count.scalar() or 0,
+        "filieres": filieres_count.scalar() or 0,
+        "inscriptions": inscriptions_count.scalar() or 0,
+        "paiements": paiements_count.scalar() or 0,
+    }

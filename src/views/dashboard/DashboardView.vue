@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { 
   Users, 
   BookOpen, 
@@ -9,38 +9,50 @@ import {
   Calendar,
   FileText,
   DollarSign,
-  CheckCircle
+  CheckCircle,
+  Loader2,
+  RefreshCw
 } from 'lucide-vue-next'
 import { useAuthStore } from '@/stores/auth'
+import { fetchWithAuth } from '@/api/auth'
 
 const authStore = useAuthStore()
+
+const loading = ref(true)
+const error = ref('')
+const stats = ref({
+  etudiants: 0,
+  filieres: 0,
+  inscriptions: 0,
+  paiements: 0
+})
 
 const kpis = computed(() => [
   { 
     title: 'Étudiants inscrits', 
-    value: '2,847', 
-    change: '+12%', 
+    value: stats.value.etudiants.toLocaleString('fr-FR'), 
+    change: '+12%',
     icon: Users,
     color: 'bg-blue-500'
   },
   { 
-    title: 'Cours actifs', 
-    value: '156', 
-    change: '+5%', 
+    title: 'Filières actives', 
+    value: stats.value.filieres.toString(), 
+    change: '+2',
     icon: BookOpen,
     color: 'bg-green-500'
   },
   { 
-    title: 'Taux de réussite', 
-    value: '87.3%', 
-    change: '+2.1%', 
+    title: 'Inscriptions', 
+    value: stats.value.inscriptions.toLocaleString('fr-FR'), 
+    change: '+5%',
     icon: GraduationCap,
     color: 'bg-purple-500'
   },
   { 
-    title: 'Recettes du mois', 
-    value: '45.2M FCFA', 
-    change: '+8%', 
+    title: 'Paiements', 
+    value: stats.value.paiements.toLocaleString('fr-FR'), 
+    change: '+8%',
     icon: DollarSign,
     color: 'bg-orange-500'
   },
@@ -59,6 +71,34 @@ const recentActivities = [
   { action: 'Paiement reçu', user: 'Jean-Pierre Ondo', time: 'Il y a 18 min' },
   { action: 'Emploi du temps modifié', user: 'Admin Scolarité', time: 'Il y a 1h' },
 ]
+
+async function fetchStats() {
+  try {
+    loading.value = true
+    error.value = ''
+    
+    const token = localStorage.getItem('auth_token')
+    if (!token) return
+
+    const response = await fetchWithAuth('http://127.0.0.1:8765/api/v1/admin/stats')
+    if (response.ok) {
+      const data = await response.json()
+      stats.value = data
+    }
+  } catch (e) {
+    console.error('Failed to fetch stats:', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => {
+  fetchStats()
+})
+
+function refresh() {
+  fetchStats()
+}
 </script>
 
 <template>
@@ -70,18 +110,39 @@ const recentActivities = [
           Tableau de bord
         </h1>
         <p class="text-gray-500 mt-1">
-          Vue d'ensemble de votre établissement
+          Bienvenue, {{ authStore.user?.prenom }} {{ authStore.user?.nom }}
         </p>
       </div>
       <div class="flex items-center gap-3">
         <span class="text-sm text-gray-500">
           Année académique: 2024-2025
         </span>
+        <button 
+          @click="refresh"
+          class="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          :class="{ 'animate-spin': loading }"
+        >
+          <RefreshCw class="w-5 h-5 text-gray-600" />
+        </button>
+      </div>
+    </div>
+
+    <!-- Error Banner -->
+    <div v-if="error" class="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+      {{ error }}
+    </div>
+
+    <!-- Loading State -->
+    <div v-if="loading" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div v-for="i in 4" :key="i" class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 animate-pulse">
+        <div class="h-12 w-12 bg-gray-200 rounded-lg mb-4"></div>
+        <div class="h-8 bg-gray-200 rounded mb-2 w-24"></div>
+        <div class="h-4 bg-gray-200 rounded w-32"></div>
       </div>
     </div>
 
     <!-- KPI Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+    <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <div
         v-for="kpi in kpis"
         :key="kpi.title"

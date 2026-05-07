@@ -1,67 +1,69 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 from database import get_db
-from models import etudiant
-from schemas.etudiant import EtudiantCreate, EtudiantUpdate, InscriptionCreate
 
-router = APIRouter()
+router = APIRouter(tags=["Étudiants"])
 
 @router.get("/")
-def get_etudiants(db: Session = Depends(get_db)):
-    return db.query(etudiant.Etudiant).all()
+async def get_etudiants(
+    skip: int = 0,
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db)
+):
+    from models.etudiant import Etudiant
+    result = await db.execute(select(Etudiant).offset(skip).limit(limit))
+    etudiants = result.scalars().all()
+    return etudiants
 
 @router.get("/{etudiant_id}")
-def get_etudiant(etudiant_id: int, db: Session = Depends(get_db)):
-    return db.query(etudiant.Etudiant).filter(etudiant.Etudiant.id == etudiant_id).first()
+async def get_etudiant(
+    etudiant_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+    from models.etudiant import Etudiant
+    result = await db.execute(select(Etudiant).where(Etudiant.id == etudiant_id))
+    etudiant = result.scalar_one_or_none()
+    if not etudiant:
+        raise HTTPException(status_code=404, detail="Étudiant non trouvé")
+    return etudiant
 
 @router.post("/")
-def create_etudiant(data: EtudiantCreate, db: Session = Depends(get_db)):
-    e = etudiant.Etudiant(**data.model_dump())
+async def create_etudiant(
+    data: dict,
+    db: AsyncSession = Depends(get_db)
+):
+    from models.etudiant import Etudiant
+    e = Etudiant(**data)
     db.add(e)
-    db.commit()
-    db.refresh(e)
+    await db.commit()
+    await db.refresh(e)
     return e
 
 @router.put("/{etudiant_id}")
-def update_etudiant(etudiant_id: int, data: EtudiantUpdate, db: Session = Depends(get_db)):
-    e = db.query(etudiant.Etudiant).filter(etudiant.Etudiant.id == etudiant_id).first()
+async def update_etudiant(
+    etudiant_id: str,
+    data: dict,
+    db: AsyncSession = Depends(get_db)
+):
+    from models.etudiant import Etudiant
+    result = await db.execute(select(Etudiant).where(Etudiant.id == etudiant_id))
+    e = result.scalar_one_or_none()
     if not e:
-        return {"error": "Étudiant non trouvé"}
-    for k, v in data.model_dump(exclude_unset=True).items():
-        setattr(e, k, v)
-    db.commit()
+        raise HTTPException(status_code=404, detail="Étudiant non trouvé")
+    for k, v in data.items():
+        if hasattr(e, k):
+            setattr(e, k, v)
+    await db.commit()
     return e
 
-@router.delete("/{etudiant_id}")
-def delete_etudiant(etudiant_id: int, db: Session = Depends(get_db)):
-    e = db.query(etudiant.Etudiant).filter(etudiant.Etudiant.id == etudiant_id).first()
-    if not e:
-        return {"error": "Étudiant non trouvé"}
-    db.delete(e)
-    db.commit()
-    return {"message": "Étudiant supprimé"}
-
-@router.get("/{etudiant_id}/documents")
-def get_documents(etudiant_id: int, db: Session = Depends(get_db)):
-    e = db.query(etudiant.Etudiant).filter(etudiant.Etudiant.id == etudiant_id).first()
-    if not e:
-        return {"error": "Étudiant non trouvé"}
-    return e.documents
-
-@router.post("/{etudiant_id}/inscription")
-def create_inscription(etudiant_id: int, data: InscriptionCreate, db: Session = Depends(get_db)):
-    from models import filiere
-    f = db.query(filiere.Filiere).filter(filiere.Filiere.id == data.filiere_id).first()
-    if not f:
-        return {"error": "Filière non trouvée"}
-    ins = etudiant.Inscription(
-        etudiant_id=etudiant_id,
-        filiere_id=data.filiere_id,
-        anneeAcademique=data.anneeAcademique,
-        niveau=data.niveau,
-        statut="actif"
+@router.get("/{etudiant_id}/inscriptions")
+async def get_etudiant_inscriptions(
+    etudiant_id: str,
+    db: AsyncSession = Depends(get_db)
+):
+    from models.etudiant import Inscription
+    result = await db.execute(
+        select(Inscription).where(Inscription.etudiant_id == etudiant_id)
     )
-    db.add(ins)
-    db.commit()
-    db.refresh(ins)
-    return ins
+    return result.scalars().all()
