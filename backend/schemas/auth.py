@@ -34,7 +34,7 @@ class UserUpdate(BaseModel):
 
 
 class UserProfile(BaseModel):
-    id: int
+    id: str
     email: str
     nom: str
     prenom: str
