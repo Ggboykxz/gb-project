@@ -66,9 +66,12 @@ export function removeToken() {
 
 export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const token = getToken()
+  if (!token) {
+    throw new Error('No auth token')
+  }
   const headers = {
     ...options.headers,
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    Authorization: `Bearer ${token}`,
   }
   
   const response = await fetch(url, { ...options, headers })
